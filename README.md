@@ -68,3 +68,79 @@ Example questions:
 - "Who is the sender of this letter?"
 
 Note: The accuracy of answers depends on the quality of the input image and the complexity of the question.
+
+## Tile Prompt Workflow (Florence2 + SimpleTiles)
+
+This fork adds **per-tile captioning and conditioning** for intelligent tiled upscaling. Each tile receives its own context-aware prompt from Florence2, enabling better detail enhancement in different regions of your image.
+
+### Prerequisites
+
+1. **ComfyUI_SimpleTiles_Uprez** - Required for tile splitting and merging
+   - Provides `DynamicTileSplit` and `DynamicTileMerge` nodes
+   - Usually already installed in most ComfyUI setups
+
+2. **Florence2 Model** - Download via `DownloadAndLoadFlorence2Model` node
+   - Recommended: `microsoft/Florence-2-large` or `Florence-2-large-ft` for best captions
+   - Use `FL2MODEL` output type (not `FLORENCE2`)
+
+### Workflow Overview
+
+Here's the complete node chain for per-tile prompted upscaling:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 1. Load Image                                                    │
+│    └─> LoadImage node                                           │
+├─────────────────────────────────────────────────────────────────┤
+│ 2. Split into Tiles                                              │
+│    └─> DynamicTileSplit (SimpleTiles)                           │
+│        - Output: tiles (IMAGE batch), tile_calc (metadata)      │
+├─────────────────────────────────────────────────────────────────┤
+│ 3. Add Position Metadata (if needed)                            │
+│    └─> Tile Calc Add Positions                                  │
+│        - Only needed if DynamicTileSplit doesn't provide positions│
+├─────────────────────────────────────────────────────────────────┤
+│ 4. Caption Each Tile                                             │
+│    └─> Florence2 Batch Caption (Tiles)                          │
+│        - Input: tiles, Florence2 model (FL2MODEL)               │
+│        - Output: prompts_list (one caption per tile)            │
+├─────────────────────────────────────────────────────────────────┤
+│ 5. Convert Prompts to Conditioning                              │
+│    └─> Prompt List -> Conditioning                              │
+│        - Input: prompts_list, CLIP model                        │
+│        - Output: conditioning_list (CLIP embeddings per tile)   │
+├─────────────────────────────────────────────────────────────────┤
+│ 6. Process Tiles with Per-Tile Prompts                          │
+│    └─> Tiled Sampler with Prompt List                           │
+│        - Input: tiles, per_tile_positive, negative, VAE, model  │
+│        - Output: processed_tiles (enhanced tiles)               │
+├─────────────────────────────────────────────────────────────────┤
+│ 7. Merge Tiles Back Together                                    │
+│    └─> DynamicTileMerge (SimpleTiles)                           │
+│        - Input: processed_tiles, tile_calc                      │
+│        - Output: final upscaled image                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Quick Start Tips
+
+- **Caption Quality**: Use `detailed_caption` or `more_detailed_caption` task modes
+- **Prompt Formatting**: Use prepend/append text to add quality tags
+  - Example prepend: `"high quality, detailed, "`
+  - Example append: `", sharp focus, 8k"`
+- **Fallback Conditioning**: Always provide `fallback_positive` to TiledSampler for safety
+- **Preview Captions**: Use `TilePromptPreview` node to inspect generated captions
+- **Edit Captions**: Use `PromptListEditor` to manually override specific tile prompts
+
+### New Nodes in This Package
+
+| Node | Purpose |
+|------|---------|
+| **Florence2 Batch Caption (Tiles)** | Caption each tile with Florence2 |
+| **Prompt List -> Conditioning** | Convert prompts to CLIP embeddings |
+| **Tiled Sampler with Prompt List** | Sample tiles with per-tile conditioning |
+| **Tile Calc Add Positions** | Add position metadata to tile_calc |
+| **Tile Prompt Preview** | Preview tiles with their captions |
+| **Prompt List Editor** | Manually edit individual tile prompts |
+
+All nodes are automatically registered when this custom node is enabled. See `FLORENCE2_TILES_DESIGN.md` for detailed documentation.
