@@ -1,0 +1,259 @@
+{
+  "last_node_id": 20,
+  "last_link_id": 25,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [50, 200],
+      "size": [315, 314],
+      "title": "Load Source Image",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["input.png"]
+    },
+    {
+      "id": 2,
+      "type": "DynamicTileSplit",
+      "pos": [400, 200],
+      "size": [300, 150],
+      "title": "Split into Tiles",
+      "properties": {},
+      "widgets_values": [768, 128, "noise"],
+      "inputs": [
+        {"name": "image", "type": "IMAGE", "link": 1}
+      ],
+      "outputs": [
+        {"name": "tiles", "type": "IMAGE", "links": [2, 3], "slot_index": 0},
+        {"name": "tile_calc", "type": "TILE_CALC", "links": [4, 12], "slot_index": 1}
+      ]
+    },
+    {
+      "id": 3,
+      "type": "DownloadAndLoadFlorence2Model",
+      "pos": [50, 550],
+      "size": [400, 100],
+      "title": "Load Florence2",
+      "properties": {},
+      "widgets_values": ["microsoft/Florence-2-large"],
+      "outputs": [
+        {"name": "florence_model", "type": "FLORENCE2", "links": [5], "slot_index": 0}
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Florence2BatchCaption",
+      "pos": [750, 200],
+      "size": [350, 220],
+      "title": "Generate Per-Tile Captions",
+      "properties": {},
+      "widgets_values": [
+        "detailed_caption",
+        "high quality, detailed, sharp, ",
+        ", professional photography, 8k",
+        256
+      ],
+      "inputs": [
+        {"name": "tiles", "type": "IMAGE", "link": 2},
+        {"name": "florence_model", "type": "FLORENCE2", "link": 5},
+        {"name": "tile_calc", "type": "TILE_CALC", "link": 4}
+      ],
+      "outputs": [
+        {"name": "prompts_preview", "type": "STRING", "links": [6], "slot_index": 0},
+        {"name": "prompts_list", "type": "STRING", "links": [7], "slot_index": 1}
+      ]
+    },
+    {
+      "id": 5,
+      "type": "TilePromptPreview",
+      "pos": [750, 480],
+      "size": [350, 150],
+      "title": "Preview Tile Prompts",
+      "properties": {},
+      "inputs": [
+        {"name": "tiles", "type": "IMAGE", "link": 3},
+        {"name": "prompts_preview", "type": "STRING", "link": 6}
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CheckpointLoaderSimple",
+      "pos": [50, 700],
+      "size": [315, 98],
+      "title": "Load SDXL Model",
+      "properties": {},
+      "widgets_values": ["sdxl_base.safetensors"],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [8], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [9, 10], "slot_index": 1},
+        {"name": "VAE", "type": "VAE", "links": [11], "slot_index": 2}
+      ]
+    },
+    {
+      "id": 7,
+      "type": "PromptListToConditioning",
+      "pos": [1150, 200],
+      "size": [300, 80],
+      "title": "Encode Per-Tile Prompts",
+      "properties": {},
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 9},
+        {"name": "prompts_list", "type": "STRING", "link": 7}
+      ],
+      "outputs": [
+        {"name": "conditioning_list", "type": "CONDITIONING", "links": [13], "slot_index": 0}
+      ]
+    },
+    {
+      "id": 8,
+      "type": "CLIPTextEncode",
+      "pos": [400, 550],
+      "size": [400, 120],
+      "title": "Negative Prompt",
+      "properties": {},
+      "widgets_values": ["blurry, low quality, artifacts, noise, jpeg artifacts, watermark, text"],
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 10}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "links": [14], "slot_index": 0}
+      ]
+    },
+    {
+      "id": 9,
+      "type": "TiledSamplerWithPromptList",
+      "pos": [1150, 350],
+      "size": [350, 350],
+      "title": "Process Tiles with Per-Tile Prompts",
+      "properties": {},
+      "widgets_values": [
+        42,
+        20,
+        7.0,
+        "euler",
+        "normal",
+        0.35
+      ],
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 8},
+        {"name": "tiles", "type": "IMAGE", "link": 15},
+        {"name": "vae", "type": "VAE", "link": 11},
+        {"name": "negative", "type": "CONDITIONING", "link": 14},
+        {"name": "per_tile_positive", "type": "CONDITIONING", "link": 13}
+      ],
+      "outputs": [
+        {"name": "processed_tiles", "type": "IMAGE", "links": [16], "slot_index": 0}
+      ]
+    },
+    {
+      "id": 10,
+      "type": "ImageUpscaleWithModel",
+      "pos": [750, 700],
+      "size": [315, 80],
+      "title": "Pre-Upscale Tiles (Optional)",
+      "properties": {},
+      "inputs": [
+        {"name": "upscale_model", "type": "UPSCALE_MODEL", "link": 17},
+        {"name": "image", "type": "IMAGE", "link": 2}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [15], "slot_index": 0}
+      ]
+    },
+    {
+      "id": 11,
+      "type": "UpscaleModelLoader",
+      "pos": [400, 700],
+      "size": [315, 58],
+      "title": "Load Upscale Model",
+      "properties": {},
+      "widgets_values": ["RealESRGAN_x4plus.pth"],
+      "outputs": [
+        {"name": "UPSCALE_MODEL", "type": "UPSCALE_MODEL", "links": [17], "slot_index": 0}
+      ]
+    },
+    {
+      "id": 12,
+      "type": "DynamicTileMerge",
+      "pos": [1550, 350],
+      "size": [300, 120],
+      "title": "Merge Tiles (Advanced Blend)",
+      "properties": {},
+      "widgets_values": [64],
+      "inputs": [
+        {"name": "tiles", "type": "IMAGE", "link": 16},
+        {"name": "tile_calc", "type": "TILE_CALC", "link": 12}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [18], "slot_index": 0}
+      ]
+    },
+    {
+      "id": 13,
+      "type": "SaveImage",
+      "pos": [1900, 350],
+      "size": [315, 270],
+      "title": "Save Output",
+      "properties": {},
+      "widgets_values": ["upscaled_"],
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 18}
+      ]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "IMAGE"],
+    [2, 2, 0, 4, 0, "IMAGE"],
+    [3, 2, 0, 5, 0, "IMAGE"],
+    [4, 2, 1, 4, 2, "TILE_CALC"],
+    [5, 3, 0, 4, 1, "FLORENCE2"],
+    [6, 4, 0, 5, 1, "STRING"],
+    [7, 4, 1, 7, 1, "STRING"],
+    [8, 6, 0, 9, 0, "MODEL"],
+    [9, 6, 1, 7, 0, "CLIP"],
+    [10, 6, 1, 8, 0, "CLIP"],
+    [11, 6, 2, 9, 2, "VAE"],
+    [12, 2, 1, 12, 1, "TILE_CALC"],
+    [13, 7, 0, 9, 4, "CONDITIONING"],
+    [14, 8, 0, 9, 3, "CONDITIONING"],
+    [15, 10, 0, 9, 1, "IMAGE"],
+    [16, 9, 0, 12, 0, "IMAGE"],
+    [17, 11, 0, 10, 0, "UPSCALE_MODEL"],
+    [18, 12, 0, 13, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "title": "1. Load & Split",
+      "bounding": [25, 100, 750, 420],
+      "color": "#3f789e"
+    },
+    {
+      "title": "2. Per-Tile Captioning",
+      "bounding": [725, 100, 400, 330],
+      "color": "#a1309b"
+    },
+    {
+      "title": "3. Process with Per-Tile Prompts",
+      "bounding": [1125, 100, 400, 650],
+      "color": "#88a800"
+    },
+    {
+      "title": "4. Merge & Save",
+      "bounding": [1525, 100, 425, 430],
+      "color": "#b06634"
+    }
+  ],
+  "config": {},
+  "extra": {
+    "workflow_info": {
+      "name": "Florence2 Per-Tile Upscaling",
+      "description": "Intelligent upscaling with per-tile VLM captions and advanced blending",
+      "version": "1.0.0",
+      "required_nodes": [
+        "ComfyUI-Florence2-Tile-prompt",
+        "ComfyUI_SimpleTiles_Uprez"
+      ]
+    }
+  }
+}
