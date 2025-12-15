@@ -1,5 +1,38 @@
 # Review Progress
 
+## Integration Progress (2025-12-15)
+
+### Goals
+- [x] Inventory both codebases and docs
+- [x] Review current repo for issues
+- [x] Integrate ComfyUI_SimpleTiles_Uprez
+- [x] Add sample ComfyUI workflow JSONs
+- [x] Update README for combined plugin
+- [x] Run quick import and sanity checks
+- [x] Finalize progress log and summary
+
+### Notes
+- Source to integrate: `C:\ComfyUI\custom_nodes\ComfyUI_SimpleTiles_Uprez`
+- Planned layout: vendor as `simpletiles_uprez/` subpackage and merge node mappings in `init_integration.py`
+
+### Issues / Improvements Identified
+- `example_workflow.json` references `DynamicTileSplit`/`DynamicTileMerge` and `FLORENCE2` types; mismatches current nodes (`SimpleTilesUprez*` keys, `FL2MODEL`) and widget schemas.
+- `tile_nodes.py` assumes `tile_calc["tile_positions"][i]` is a tuple `(row, col, ...)`; `ComfyUI_SimpleTiles_Uprez` uses dicts (`{"row":..., "col":..., ...}`) which breaks per-tile prompt metadata.
+- `README.md` still documents `ComfyUI_SimpleTiles_Uprez` as an external prerequisite; goal is to vendor it into this repo.
+- `requirements.txt` does not list `huggingface_hub` (used for downloads).
+- `pyproject.toml` metadata still reflects upstream `ComfyUI-Florence2` naming.
+
+### Sanity Checks Performed
+- Python syntax compilation (in-memory) for `init_integration.py`, `tile_nodes.py`, and `simpletiles_uprez/**/*.py`
+- JSON validation for `example_workflow.json` and `workflows/*.json`
+
+### Integration Summary
+- Vendored SimpleTiles Uprez into `simpletiles_uprez/` (legacy + dynamic tiling, plus `linear`/`noise`/`laplacian` blending)
+- Exported SimpleTiles nodes via `init_integration.py` so ComfyUI loads everything from one custom node
+- Fixed `Florence2BatchCaption` to accept `tile_calc["tile_positions"]` as either tuples or dicts
+- Added sample workflows under `workflows/` and refreshed `example_workflow.json`
+- Updated `README.md` and `requirements.txt` for the combined plugin
+
 ## Comprehensive Review (2025-12-11)
 
 ### Review Scope

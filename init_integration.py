@@ -5,10 +5,10 @@ Combines Florence2 VLM captioning with SimpleTiles for intelligent
 per-tile prompting during upscaling workflows.
 
 Integration Architecture:
-1. Split image into tiles (DynamicTileSplit from SimpleTiles)
+1. Split image into tiles (SimpleTilesUprezDynamicTileSplit)
 2. Caption each tile with Florence2 (Florence2BatchCaption)
 3. Process tiles with per-tile prompts (TiledSamplerWithPromptList)
-4. Merge with advanced blending (DynamicTileMerge from SimpleTiles)
+4. Merge with advanced blending (SimpleTilesUprezDynamicTileMerge)
 """
 
 # Import original Florence2 nodes
@@ -23,15 +23,23 @@ from .tile_nodes import (
     NODE_DISPLAY_NAME_MAPPINGS as TILE_NODE_DISPLAY_NAME_MAPPINGS,
 )
 
+# Vendored SimpleTiles Uprez nodes
+from .simpletiles_uprez import (
+    NODE_CLASS_MAPPINGS as SIMPLETILES_UPREZ_NODE_CLASS_MAPPINGS,
+    NODE_DISPLAY_NAME_MAPPINGS as SIMPLETILES_UPREZ_NODE_DISPLAY_NAME_MAPPINGS,
+)
+
 # Combine all mappings
 NODE_CLASS_MAPPINGS = {
     **FLORENCE2_NODE_CLASS_MAPPINGS,
     **TILE_NODE_CLASS_MAPPINGS,
+    **SIMPLETILES_UPREZ_NODE_CLASS_MAPPINGS,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     **FLORENCE2_NODE_DISPLAY_NAME_MAPPINGS,
     **TILE_NODE_DISPLAY_NAME_MAPPINGS,
+    **SIMPLETILES_UPREZ_NODE_DISPLAY_NAME_MAPPINGS,
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

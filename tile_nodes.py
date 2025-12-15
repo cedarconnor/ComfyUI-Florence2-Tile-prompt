@@ -158,8 +158,16 @@ class Florence2BatchCaption:
             if tile_calc and 'tile_positions' in tile_calc:
                 pos = tile_calc['tile_positions'][i] if i < len(tile_calc['tile_positions']) else None
                 if pos:
-                    row, col = pos[0], pos[1]
-                    task_prompt = f"{task_prompt} This is tile at row {row}, column {col}."
+                    row = None
+                    col = None
+                    if isinstance(pos, dict):
+                        row = pos.get("row")
+                        col = pos.get("col")
+                    elif isinstance(pos, (list, tuple)) and len(pos) >= 2:
+                        row, col = pos[0], pos[1]
+
+                    if row is not None and col is not None:
+                        task_prompt = f"{task_prompt} This is tile at row {row}, column {col}."
             
             # Process through Florence2
             inputs = processor(

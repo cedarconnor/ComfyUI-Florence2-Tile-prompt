@@ -1,0 +1,95 @@
+{
+  "last_node_id": 6,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [50, 250],
+      "size": [315, 314],
+      "title": "Load Source Image",
+      "properties": { "Node name for S&R": "LoadImage" },
+      "widgets_values": ["input.png"]
+    },
+    {
+      "id": 2,
+      "type": "SimpleTilesUprezDynamicTileSplit",
+      "pos": [400, 250],
+      "size": [350, 170],
+      "title": "Split into Tiles (SimpleTiles Uprez)",
+      "properties": {},
+      "widgets_values": [512, 512, 128, "noise", 0],
+      "inputs": [{ "name": "image", "type": "IMAGE", "link": 1 }],
+      "outputs": [
+        { "name": "tiles", "type": "IMAGE", "links": [2], "slot_index": 0 },
+        { "name": "tile_calc", "type": "TILE_CALC", "links": [5], "slot_index": 1 }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "UpscaleModelLoader",
+      "pos": [50, 610],
+      "size": [350, 60],
+      "title": "Load Upscale Model",
+      "properties": {},
+      "widgets_values": ["RealESRGAN_x4plus.pth"],
+      "outputs": [{ "name": "UPSCALE_MODEL", "type": "UPSCALE_MODEL", "links": [3], "slot_index": 0 }]
+    },
+    {
+      "id": 4,
+      "type": "ImageUpscaleWithModel",
+      "pos": [400, 610],
+      "size": [340, 80],
+      "title": "Upscale Tiles",
+      "properties": {},
+      "inputs": [
+        { "name": "upscale_model", "type": "UPSCALE_MODEL", "link": 3 },
+        { "name": "image", "type": "IMAGE", "link": 2 }
+      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [4], "slot_index": 0 }]
+    },
+    {
+      "id": 5,
+      "type": "SimpleTilesUprezDynamicTileMerge",
+      "pos": [800, 410],
+      "size": [360, 150],
+      "title": "Merge Tiles (SimpleTiles Uprez)",
+      "properties": {},
+      "widgets_values": [64, false, "tile_merge"],
+      "inputs": [
+        { "name": "images", "type": "IMAGE", "link": 4 },
+        { "name": "tile_calc", "type": "TILE_CALC", "link": 5 }
+      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [6], "slot_index": 0 }]
+    },
+    {
+      "id": 6,
+      "type": "SaveImage",
+      "pos": [1200, 410],
+      "size": [320, 270],
+      "title": "Save Output",
+      "properties": {},
+      "widgets_values": ["upscaled_"],
+      "inputs": [{ "name": "images", "type": "IMAGE", "link": 6 }]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "IMAGE"],
+    [2, 2, 0, 4, 1, "IMAGE"],
+    [3, 3, 0, 4, 0, "UPSCALE_MODEL"],
+    [4, 4, 0, 5, 0, "IMAGE"],
+    [5, 2, 1, 5, 2, "TILE_CALC"],
+    [6, 5, 0, 6, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "workflow_info": {
+      "name": "SimpleTiles Uprez Dynamic Upscale (Integrated)",
+      "description": "Split -> upscale tiles -> merge with noise/laplacian blending.",
+      "version": "1.0.0",
+      "required_nodes": ["ComfyUI-Florence2-Tile-prompt"]
+    }
+  }
+}
+
