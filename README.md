@@ -88,6 +88,81 @@ This repo includes a vendored copy of `ComfyUI_SimpleTiles_Uprez`, so you do **n
 
 If you also have `C:\ComfyUI\custom_nodes\ComfyUI_SimpleTiles_Uprez` installed, remove/disable one of the two to avoid duplicate node registrations.
 
+### Advanced Tile Processing Features
+
+This package includes advanced tile processing capabilities inspired by [ComfyUI-Advanced-Tile-Processing](https://github.com/QL-boy/ComfyUI-Advanced-Tile-Processing):
+
+#### Blending Modes
+
+Six blending algorithms available for seamless tile merging:
+
+| Mode | Description | Speed | Quality |
+|------|-------------|-------|---------|
+| `linear` | Simple gradient blending | Fastest | Good |
+| `gaussian` | Center-weighted masks with smooth exponential falloff | Fast | Better |
+| `cosine` | S-curve interpolation for natural transitions | Fast | Better |
+| `noise` | Perlin noise-based organic blending | Medium | Good (hides repetitive patterns) |
+| `laplacian` | Multi-scale Laplacian pyramid blending | Slow | Best |
+| `accumulation` | Order-independent weighted averaging | Medium | Best (no order artifacts) |
+
+#### Feather Percentage Control
+
+Instead of specifying blend width in pixels, you can use **feather percentage** (0-50%) relative to tile size. This is more intuitive when working with different resolutions.
+
+```
+feather_percent = 15  →  blend_width = tile_size × 0.15
+```
+
+#### Processing Modes
+
+Choose between two processing strategies based on your VRAM:
+
+| Mode | Description | When to Use |
+|------|-------------|-------------|
+| `batch` | All tiles in memory simultaneously | Fast GPUs with plenty of VRAM |
+| `sequential` | Process one tile at a time | Low VRAM / large images |
+
+#### Accumulation Buffer Blending
+
+Enable `use_accumulation` for order-independent blending that eliminates artifacts from sequential tile processing:
+
+```
+Final_Pixel = Σ(Tile × Weight) / (Σ(Weight) + ε)
+```
+
+This approach accumulates weighted contributions from all tiles before normalizing, producing consistent results regardless of processing order.
+
+#### Edge-Fallback Strategy
+
+When `edge_fallback` is enabled (default), blend weights are automatically adjusted at image boundaries to prevent artifacts where tiles meet the edge.
+
+### Utility Nodes
+
+| Node | Purpose |
+|------|---------|
+| **Optimal Tile Size Calculator** | Calculate optimal tile dimensions based on image size, target tile count, overlap %, divisibility requirements (8 for latent space), and VRAM budget |
+| **Tile Boundary Preview** | Visualize tile grid overlaid on the source image with overlap region highlighting - useful for debugging before processing |
+| **Upscale-Aware Tile Merge** | Auto-detect upscale factor from tile dimensions and merge with proper coordinate scaling |
+
+#### Optimal Tile Size Calculator
+
+Inputs:
+- `image` - Source image
+- `target_tile_count` - How many tiles you want (will adjust to fit evenly)
+- `min_overlap_percent` - Minimum overlap as % of tile size (recommend 10-20%)
+- `divisible_by` - Tile dimensions divisibility (8 for latent space compatibility)
+- `max_tile_pixels` - VRAM constraint (0=no limit, 262144=512×512, 1048576=1024×1024)
+- `prefer_square` - Prefer square tiles vs matching aspect ratio
+
+Outputs: `tile_width`, `tile_height`, `overlap`, `tile_count`, `info`
+
+#### Tile Boundary Preview
+
+Visualize your tiling configuration before running the full pipeline:
+- Draws tile boundaries in configurable colors
+- Highlights overlap regions in orange (semi-transparent)
+- Shows grid info: tile count, dimensions, overlap
+
 ### Workflow Overview
 
 Here's the complete node chain for per-tile prompted upscaling:
@@ -139,6 +214,8 @@ Here's the complete node chain for per-tile prompted upscaling:
 
 ### New Nodes in This Package
 
+#### Florence2 Tile Nodes
+
 | Node | Purpose |
 |------|---------|
 | **Florence2 Batch Caption (Tiles)** | Caption each tile with Florence2 |
@@ -147,6 +224,16 @@ Here's the complete node chain for per-tile prompted upscaling:
 | **Tile Calc Add Positions** | Add position metadata to tile_calc |
 | **Tile Prompt Preview** | Preview tiles with their captions |
 | **Prompt List Editor** | Manually edit individual tile prompts |
+
+#### Advanced Tile Processing Nodes
+
+| Node | Purpose |
+|------|---------|
+| **TileSplit (SimpleTiles Uprez Dynamic)** | Split image into overlapping tiles with blend mode selection |
+| **TileMerge (SimpleTiles Uprez Dynamic)** | Merge tiles with advanced blending (6 modes), VRAM modes, accumulation |
+| **Optimal Tile Size Calculator** | Auto-calculate optimal tile dimensions for your image/VRAM |
+| **Tile Boundary Preview** | Debug visualization of tile grid and overlaps |
+| **Upscale-Aware Tile Merge** | Merge upscaled tiles with auto-detected scale factor |
 
 All nodes are automatically registered when this custom node is enabled. See `FLORENCE2_TILES_DESIGN.md` for detailed documentation.
 
